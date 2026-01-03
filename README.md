@@ -49,10 +49,12 @@ A single-page application for posting comments with cascading replies. Built wit
 3. Update connection string in appsettings.json, if needed
 4. Run migrations to create the database schema:
 ```bash
-cd src```
+cd src
+```
 5. Run the application:
 ```bash
-dotnet run```
+dotnet run
+```
 6. Access the Swagger UI at https://localhost:7107/swagger
 
 ### Using Docker Compose
@@ -60,7 +62,8 @@ dotnet run```
 2. Update connection string in appsettings.json, if needed
 3. Run the application with Docker Compose:
 ```bash
-docker-compose up -d```
+docker-compose up -d
+```
 4. Access the Swagger UI at https://localhost:7107/swagger
 
 Access to the app Frontend: http://localhost:5000
