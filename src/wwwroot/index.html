@@ -1,0 +1,93 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>project comments</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/glightbox.min.css">
+
+</head>
+<body>
+    <div id="mainPage">
+
+        <div id="mainHeader" class="header">
+            <div class="panel-control" id="panelControl">
+                <div class="panel-sorting" id="panelSorting">
+                    <span class="label-text">Сортировка:</span>
+                    <button class="btn sort-btn" data-field="CreatedAt" id="sortCreatedAt">Дата</button>
+                    <button class="btn sort-btn" data-field="UserName" id="sortUserName">Имя</button>
+                    <button class="btn sort-btn" data-field="Email" id="sortEmail">Email</button>
+                    <div class="toggle">
+                        <label for="dirToggle"></label>
+                        <button id="dirToggle" class="btn" title="Переключить порядок">↑↓</button>
+                    </div>
+                </div>
+                <button id="openAddCommentModal" class="btn open-modal"
+                        data-default-text="новый комментарий" data-reply-text="новый ответ">
+                    опубликовать
+                </button>
+            </div>
+        </div>
+        <div id="repliesHeader" class="header" style="display:none;">
+            <div class="close-replies">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path stroke-width="2" stroke-linecap="round" d="M1 6h10M1 6l4-4M1 6l4 4" />
+                </svg>
+            </div>
+            <div class="panel-control">
+                <span class="replies-title">Ветка</span>
+            </div>
+            <button id="openAddReplyModal" class="btn open-modal">новый ответ</button>
+        </div>
+
+        <div class="comments-container" id="comments-containerId"></div>
+
+        <div class="pagination" id="pagination-page">
+            <button class="btn" id="prevBtn">Назад</button>
+            <span class="label-text" id="pageNumber"></span>
+            <button class="btn" id="nextBtn">Вперед</button>
+        </div>
+
+        <!-- Modal window for adding a new comment/reply -->
+        <div id="addCommentModal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 class="modal-title" data-default-text="Добавить комментарий" data-reply-text="Добавить ответ">Добавить комментарий</h2>
+                <form id="commentForm" class="comment-form" enctype="multipart/form-data">
+                    <input type="text" id="userName" name="userName" placeholder="Ваше имя" required>
+                    <input type="email" id="email" name="email" placeholder="Ваш email" required>
+                    <div class="block-tags" role="toolbar" aria-label="Formatting toolbar">
+                        <button type="button" class="btn" data-tag="i" title="Курсив">[i]</button>
+                        <button type="button" class="btn" data-tag="strong" title="Жирный шрифт">[strong]</button>
+                        <button type="button" class="btn" data-tag="code" title="Код">[code]</button>
+                        <button type="button" class="btn" id="btn-link" title="Ссылка">[a]</button>
+                    </div>
+                    <textarea id="commentText" name="text" placeholder="Ваш комментарий..." rows="3" required></textarea>
+                    <div><button type="button" class="btn" id="previewBtn">Предпросмотр</button></div>
+                    <div id="preview" class="preview" aria-live="polite">Превью сообщения...</div>
+                    <!-- Upload field image/txtFile -->
+                    <label for="file"></label>
+                    <input type="file" id="file" name="file" accept=".jpg,.jpeg,.png,.gif,.txt" class="file-input">
+                    <!--capcha-->
+                    <label for="captchaInput">Капча:</label>
+                    <div class="captcha-container">
+                        <div id="captchaContainer" aria-live="polite"></div>
+                        <button type="button" class="captcha-refresh" id="refreshCaptcha" aria-label="Обновить капчу">🔄</button>
+                    </div>
+                    <input type="text" id="captchaInput" name="captcha" placeholder="Введите символы, которые видите на изображении" required>
+                    <button type="submit" class="submit-btn">Отправить</button>
+                </form>
+            </div>
+        </div>
+        <!--page for replies-->
+        <div id="repliesPage" class="main-replies-page hidden">
+            <div class="original-comment" id="originalComment"></div>
+            <div class="replies-container" id="repliesContainer"></div>
+        </div>
+    </div>
+
+    <script src="/js/glightbox.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.3.0/dist/purify.min.js"></script>
+</body>
+</html>
