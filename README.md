@@ -1,7 +1,7 @@
-#SPA Comments
+# SPA Comments
 A single-page application for posting comments with cascading replies. Built with a focus on secure input, an object-oriented approach, and easy data sorting.
 
-##Features
+## Features
 - Posting comments and replies to comments (unlimited nesting)
 - Saving comments and user data in a relational database
 - Tabular output of root comments sorted by: userName, email, date added (in both directions)
@@ -15,7 +15,7 @@ A single-page application for posting comments with cascading replies. Built wit
 - Global error handling and logging
 - Swagger documentation
 
-##Technologies
+## Technologies
 
 - .NET 9
 - ASP.NET Core Web API: for building RESTful services
@@ -26,7 +26,7 @@ A single-page application for posting comments with cascading replies. Built wit
 - JavaScript: for frontend
 - Swagger: for API documentation
 
-##Project Structure
+## Project Structure
 
 - Comments.Api: Web API controllers and middleware
 - Comments.Application: business logic, application services, validation, sanitization, interfaces
@@ -35,45 +35,48 @@ A single-page application for posting comments with cascading replies. Built wit
 - Comments.Contracts: API contracts, DTOs, request and response models used for communication between the Web API and external clients
 - Comments.wwwroot — SPA UI
 
-##Requirements
+## Requirements
 - .NET 9 SDK
 - EF Core
 - SQL Server
 - Docker and Docker Compose (for containerized deployment)
 
-##Setup Instructions
+## Setup Instructions
 
-###Local Development
+### Local Development
 1. Clone the repository: https://github.com/frost945/Project_Comments
 2. Set up a local MS SQL instance or use Docker
 3. Update connection string in appsettings.json, if needed
 4. Run migrations to create the database schema:
-`cd src`
+```bash
+cd src```
 5. Run the application:
-```dotnet run```
+```bash
+dotnet run```
 6. Access the Swagger UI at https://localhost:7107/swagger
 
-###Using Docker Compose
+### Using Docker Compose
 1. Clone the repository
 2. Update connection string in appsettings.json, if needed
 3. Run the application with Docker Compose:
-`docker-compose up -d`
+```bash
+docker-compose up -d```
 4. Access the Swagger UI at https://localhost:7107/swagger
 
 Access to the app Frontend: http://localhost:5000
 
-##API Endpoints
+## API Endpoints
 - POST /Comment: Create a new comment
 - GET /Comment/parent: Get all parent comments
 - GET /Comment/children/{parentId}: Get all children comments by id
 
 
-##Security Notes
+## Security Notes
 - XSS mitigation: HTML sanitizer, strict whitelist
 - SQL Injection mitigation: EF Core parameterized queries
 - server + client validation
 
-##Future Enhancements
+## Future Enhancements
 - Implement authentication and authorization
 - Adding caching for posts
 - Adding integration and unit tests
