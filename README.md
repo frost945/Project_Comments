@@ -10,7 +10,7 @@ A single-page application for posting comments with cascading replies. Built wit
 - The ability to add a picture or text file
 - Viewing images is enhanced with visual effects using GLightbox
 - Validation of input data on the server and client side
-- The user may use the following permitted HTML tags in messages: <a href=”” title=””> </a> <code> </code> <i> </i> <strong> </strong>
+- The user may use the following permitted HTML tags in messages: `<a href=”” title=””> </a> <code> </code> <i> </i> <strong> </strong>`
 - Check for closing tags, code is valid XHTML.
 - Global error handling and logging
 - Swagger documentation
@@ -69,9 +69,9 @@ docker-compose up -d
 Access to the app Frontend: http://localhost:5000
 
 ## API Endpoints
-- POST /Comment: Create a new comment
-- GET /Comment/parent: Get all parent comments
-- GET /Comment/children/{parentId}: Get all children comments by id
+- `POST /Comment:` Create a new comment
+- `GET /Comment/parent`: Get all root comments
+- `GET /Comment/children/{parentId}`: Get all replies by id
 
 
 ## Security Notes
