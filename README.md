@@ -69,7 +69,7 @@ docker-compose up -d
 Access to the app Frontend: http://localhost:5000
 
 ## API Endpoints
-- `POST /Comment:` Create a new comment
+- `POST /Comment`: Create a new comment
 - `GET /Comment/parent`: Get all root comments
 - `GET /Comment/children/{parentId}`: Get all replies by id
 

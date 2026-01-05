@@ -82,6 +82,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseDefaultFiles();
+
+// Ensure upload directories exist
+var textFilesPath = Path.Combine(
+    builder.Environment.WebRootPath, "uploads", "textfiles");
+Directory.CreateDirectory(textFilesPath);
+
+var imagesPath = Path.Combine(
+    builder.Environment.WebRootPath, "uploads", "images");
+Directory.CreateDirectory(imagesPath);
+
 app.UseStaticFiles();
 
 // Static files for text files (with download settings)
