@@ -4,8 +4,38 @@ using Comments.Application.Services;
 using Comments.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
+using Serilog.Filters;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+
+      // Audit logs  (file only)
+      .WriteTo.Logger(audit => audit
+          .Filter.ByIncludingOnly(Matching.WithProperty("AuditUser"))
+          .WriteTo.Async(a => a.File(
+              "logs/audit-user-.txt",
+              rollingInterval: RollingInterval.Day,
+              buffered: false)) //for production, to set buffered: true
+                                //for dev, to set buffered: false, so logs appear immediately
+      )
+
+    // Technical logs (console and file), excluding audit
+    .WriteTo.Logger(tech => tech
+        .Filter.ByExcluding(Matching.WithProperty("AuditUser"))
+        .WriteTo.Async(a => a.File(
+            "logs/log-.txt",
+            rollingInterval: RollingInterval.Day,
+            buffered: true))
+        .WriteTo.Console()
+    )
+
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder();
+
+builder.Host.UseSerilog();
 
 builder.Services.AddDbContext<CommentsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

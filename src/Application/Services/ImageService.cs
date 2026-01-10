@@ -10,14 +10,24 @@ namespace Comments.Application.Services
     public class ImageService
     {
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<ImageService> _logger;
         private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif" };
         private const int MaxWidth = 320;
         private const int MaxHeight = 240;
         private const long MaxFileSize = 5 * 1024 * 1024;
+        private static readonly Dictionary<string, IImageEncoder> Encoders =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                [".jpg"] = new JpegEncoder { Quality = 80 },
+                [".jpeg"] = new JpegEncoder { Quality = 80 },
+                [".png"] = new PngEncoder(),
+                [".gif"] = new GifEncoder()
+            };
 
-        public ImageService(IWebHostEnvironment environment)
+        public ImageService(IWebHostEnvironment environment, ILogger<ImageService> logger)
         {
             _environment = environment;
+            _logger = logger;
         }
 
         public async Task<Guid> ProcessAndSaveImageAsync(IFormFile imageFile)
@@ -86,7 +96,12 @@ namespace Comments.Application.Services
                 if (File.Exists(previewPath))
                     File.Delete(previewPath);
 
-                throw new ArgumentException($"Ошибка обработки изображения: {ex.Message}");//залогировать исключение и отдавать общее на клиента
+                _logger.LogError(ex, 
+                    "Image processing failed. ImageId: {ImageId}, Extension: {Extension}",
+                    imageId,
+                    extension);
+
+                throw new InvalidOperationException("Image processing failed. Please try again later.");
             }
         }
 
@@ -104,13 +119,8 @@ namespace Comments.Application.Services
 
         private async Task SaveImageAsync(Image image, Stream stream, string extension)
         {
-            IImageEncoder encoder = extension.ToLower() switch
-            {
-                ".jpg" or ".jpeg" => new JpegEncoder { Quality = 80 },
-                ".png" => new PngEncoder(),
-                ".gif" => new GifEncoder(),
-                _ => new JpegEncoder { Quality = 80 }
-            };
+            if (!Encoders.TryGetValue(extension, out var encoder))
+                throw new ArgumentException($"Unsupported image format: {extension}");
 
             await image.SaveAsync(stream, encoder);
         }
@@ -129,33 +139,37 @@ namespace Comments.Application.Services
 
         public string? GetImageOriginalUrl(Guid? imageId)
         {
-            if(imageId == null) 
+            if (imageId == null)
                 return null;
 
-            var originalPath = Path.Combine(_environment.WebRootPath, "uploads", "images", "original");
+            foreach (var ext in _allowedExtensions)
+            {
+                var filePath = Path.Combine(
+                    _environment.WebRootPath,
+                    "uploads", "images", "original",
+                    $"{imageId}{ext}");
 
-            if (!Directory.Exists(originalPath))
-                return null;
+                if (File.Exists(filePath))
+                    return $"/uploads/images/original/{Path.GetFileName(filePath)}";
+            }
 
-
-            var file = Directory.EnumerateFiles(originalPath, $"{imageId}.*")
-                .FirstOrDefault();
-
-            return file is null
-                ? null
-                : $"/uploads/images/original/{Path.GetFileName(file)}";
+            return null;
         }
 
         private string? GetPreviewFileName(Guid imageId)
         {
-            var previewPath = Path.Combine(_environment.WebRootPath, "uploads", "images", "preview");
+            foreach (var ext in _allowedExtensions)
+            {
+                var filePath = Path.Combine(
+                    _environment.WebRootPath,
+                    "uploads", "images", "preview",
+                    $"{imageId}_preview{ext}");
 
-            if (!Directory.Exists(previewPath))
-                return null;
+                if (File.Exists(filePath))
+                    return Path.GetFileName(filePath);
+            }
 
-            var file = Directory.EnumerateFiles(previewPath, $"{imageId}_preview.*")
-                .FirstOrDefault();
-            return file is null ? null : Path.GetFileName(file);
+            return null;
         }
     }
 }

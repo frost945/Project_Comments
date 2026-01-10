@@ -1,6 +1,7 @@
 ﻿using Comments.Application.Interfaces;
 using Comments.Contracts;
 using Comments.Infrastructure.Data;
+using Comments.Infrastructure.Logging;
 using Comments.Models;
 using Comments.Models.Enums;
 using Comments.Models.Filters;
@@ -13,11 +14,13 @@ namespace Comments.Application.Services
         private readonly CommentsDbContext _dbContext;
         private readonly ImageService _imageService;
         private readonly TextFileService _textFileService;
-        public CommentService(CommentsDbContext dbContext, ImageService imageService, TextFileService textFileService)
+        private readonly ILogger<CommentService> _logger;
+        public CommentService(CommentsDbContext dbContext, ImageService imageService, TextFileService textFileService, ILogger<CommentService> logger)
         {
             _dbContext = dbContext;
             _imageService = imageService;
             _textFileService = textFileService;
+            _logger = logger;
         }
 
         public async Task<CommentResponse> CreateCommentAsync(CommentRequest request, IFormFile? file = null)
@@ -27,7 +30,7 @@ namespace Comments.Application.Services
                 bool parentIdExists = await _dbContext.Comments.AnyAsync(c => c.Id == request.ParentId);
                 if (!parentIdExists)
                 {
-                    throw new ArgumentException("ParentId does not exist");
+                    throw new KeyNotFoundException("Root comment not found");
                 }
             }
 
@@ -56,7 +59,7 @@ namespace Comments.Application.Services
                         }
 
                     default:
-                        throw new Exception("Unsupported file type");
+                        throw new ArgumentException("Unsupported file type");
                 }
             }
 
@@ -90,16 +93,24 @@ namespace Comments.Application.Services
                 TextFileUrl = _textFileService.GetTextFileUrl(comment.TextFileId),
                 TextFileName = comment.OriginalTextFileName
             };
-            Console.WriteLine("Created commentresponse:ImagePreviewUrl" + commentResponse.ImagePreviewUrl+ "ImageOriginalUrl: "+commentResponse.ImageOriginalUrl);
+
+            _logger.LogAuditUser(
+                "Created comment {CommentId} by {UserName}, HasFile: {HasFile}, ParentId: {ParentId}",
+                commentResponse.Id,
+                commentResponse.UserName,
+                file != null,
+                request.ParentId);
+
             return commentResponse;
         }
 
         public async Task<List<CommentResponse>> GetCommentsAsync(CommentQuery commentQuery, int? parentId = null)
         {
-            if(commentQuery.PageSize>25 || commentQuery.PageSize<0)
-                commentQuery.PageSize = 0;
+            if (commentQuery.PageSize is < 1 or > 25)
+                throw new ArgumentException("PageSize must be between 1 and 25");
 
-            var comments = _dbContext.Comments.AsQueryable();
+            var comments = _dbContext.Comments.AsNoTracking()
+                .AsQueryable();
 
             // root comments
             if (parentId == null)
@@ -123,7 +134,9 @@ namespace Comments.Application.Services
                     : comments.OrderByDescending(c => c.CreatedAt) 
             };
 
-            return await comments
+           var commentsResponse = await comments
+                .Skip(commentQuery.Skip)
+                .Take(commentQuery.PageSize)
                 .Select(c => new CommentResponse
                 {
                     Id = c.Id,
@@ -135,10 +148,9 @@ namespace Comments.Application.Services
                     TextFileUrl = _textFileService.GetTextFileUrl(c.TextFileId),
                     TextFileName = c.OriginalTextFileName
                 })
-                .Skip(commentQuery.Skip)
-                .Take(commentQuery.PageSize)
-                .AsNoTracking()
                 .ToListAsync();
+
+            return commentsResponse;
         }
 
         private FileType DetectFile(IFormFile file)

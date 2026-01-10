@@ -50,7 +50,7 @@ public static class InputSanitizationService
         // Disable Unicode controls (invisible, null, etc.)
         input = RemoveControlCharacters(input);
 
-        // We only allow letters, numbers, and spaces., _, -, .
+        // We only allow letters, numbers, and ., _, -
         input = Regex.Replace(input, @"[^a-zA-Z0-9а-яА-ЯёЁ_\-.]", "");
 
         return input;
@@ -61,7 +61,7 @@ public static class InputSanitizationService
         if (string.IsNullOrWhiteSpace(input))
             return string.Empty;
 
-        input = System.Web.HttpUtility.HtmlDecode(input);
+        input = HttpUtility.HtmlDecode(input);
 
         // Remove all Html tags
         input = Regex.Replace(input, "<.*?>", "");
