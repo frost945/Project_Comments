@@ -413,7 +413,7 @@ async function onSubmitCommentForm(event)
     if (!validateCommentText(commentText)) return;
 
     const userName = document.getElementById('userName').value;
-   // if (!validateUsername(userName)) return;
+    if (!validateUsername(userName)) return;
 
     if (!validateFormCaptcha()) return;
 
