@@ -68,16 +68,16 @@ namespace Comments.Application.Services
             var cleanUserName = InputSanitizationService.SanitizeUsername(request.UserName);
             var cleanEmail = InputSanitizationService.SanitizeEmail(request.Email);
 
-            var comment = new Comment
-            {
-                ParentId = request.ParentId,
-                UserName = cleanUserName,
-                Email = cleanEmail,
-                Text = cleanText,
-                ImageId = imageId,
-                TextFileId = textFileId,
-                OriginalTextFileName = originalTextFileName
-            };
+            var comment = new Comment(
+                request.ParentId,
+                cleanUserName,
+                cleanEmail,
+                cleanText,
+                imageId,
+                textFileId,
+                originalTextFileName
+            );
+
 
             _dbContext.Add(comment);
             await _dbContext.SaveChangesAsync();
