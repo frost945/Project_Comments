@@ -72,16 +72,7 @@ public static class InputSanitizationService
         input = input.Trim();
         input = input.ToLowerInvariant();
 
-        try
-        {
-            // Using MailAddress as a strong validator
-            var addr = new MailAddress(input);
-            return addr.Address;
-        }
-        catch
-        {
-            throw new ArgumentException("Некорректный формат email.");
-        }
+        return input;        
     }
 
     private static string RemoveControlCharacters(string input)
