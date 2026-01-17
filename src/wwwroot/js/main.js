@@ -31,6 +31,7 @@ function setupEventHandlers()
     document.getElementById('nextBtn')?.addEventListener('click', async () => {
         state.skipComments += config.pageSize;
         ++state.pageNumber;
+        sessionStorage.setItem('pageNumber', state.pageNumber);
 
         await initComments();
         window.scrollTo({top: 0});
@@ -41,9 +42,14 @@ function setupEventHandlers()
         if (state.skipComments === 0) return;
 
         state.skipComments -= config.pageSize;
-        if (state.skipComments < 0) state.skipComments = 0;
+        if (state.skipComments < 0)
+            state.skipComments = 0;
+
         --state.pageNumber;
-        if (state.pageNumber < 1) state.pageNumber = 1;
+        sessionStorage.setItem('pageNumber', state.pageNumber);
+
+        if (state.pageNumber < 1)
+            state.pageNumber = 1;
 
         await initComments();
         window.scrollTo({ top: 0 });
@@ -54,9 +60,13 @@ function setupEventHandlers()
     document.querySelectorAll('.sort-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             state.sortField = btn.dataset.field;
+            sessionStorage.setItem('sortField', state.sortField);
+            sessionStorage.setItem('sortTouched', 'true');
+
             resetPagination();
             document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+
             await initComments();
         });
     });
@@ -64,8 +74,12 @@ function setupEventHandlers()
     // Sort direction toggle
     document.getElementById('dirToggle')?.addEventListener('click', async () => {
         state.sortDir = !state.sortDir;
+        sessionStorage.setItem('sortDir', state.sortDir);
+        sessionStorage.setItem('sortTouched', 'true');
+
         const btn = document.getElementById('dirToggle');
         btn.textContent = state.sortDir ? "↑" : "↓";
+
         await initComments();
     });
 
@@ -73,8 +87,53 @@ function setupEventHandlers()
         const link = e.target.closest('.comment-image-link');
         if (!link) return;
 
-        link.blur(); //убираем фокус ДО открытия
+        link.blur(); //remove focus before opening
     });
+}
+
+function savedState()
+{
+    const savedPageNumber = Number(sessionStorage.getItem('pageNumber'));
+
+    state.sortField = sessionStorage.getItem('sortField') || "CreatedAt";
+
+    const savedSortDir = sessionStorage.getItem('sortDir');
+    state.sortDir = savedSortDir !== null ? savedSortDir === 'true' : true;
+
+    // if sorting has been touched
+    const sortTouched = sessionStorage.getItem('sortTouched') === 'true';
+
+    if (sortTouched)
+    {
+        const btnSort = document.querySelector(`.sort-btn[data-field="${state.sortField}"]`);
+
+        if (btnSort) {
+            document.querySelectorAll('.sort-btn.active')
+                .forEach(b => b.classList.remove('active'));
+
+            btnSort.classList.add('active');
+        }
+        
+        const btnDir = document.getElementById('dirToggle');
+
+        if (btnDir)
+            btnDir.textContent = state.sortDir ? "↑" : "↓";
+    }
+
+    if (Number.isInteger(savedPageNumber) && savedPageNumber >= 1) {
+        state.pageNumber = savedPageNumber;
+        state.skipComments = (state.pageNumber - 1) * config.pageSize;
+    }
+}
+
+async function restoreRepliesState()
+{
+    const parentId = sessionStorage.getItem('currentParentId');
+    if (parentId)
+    {
+        await openReplies(parentId);
+    }
+
 }
 
 function openModal()
@@ -126,6 +185,9 @@ function displayComment(comment, isRoot=true)
     const commentDiv = document.createElement('div');
     commentDiv.classList.add('comment-card');
 
+    commentDiv.setAttribute('data-comment-id', comment.id);
+    commentDiv.dataComment = comment;
+
     const header = document.createElement('div');
     header.classList.add('comment-header');
 
@@ -144,7 +206,7 @@ function displayComment(comment, isRoot=true)
     {
         const repliesBtn = document.createElement('button');
         repliesBtn.classList.add('replies-btn');
-        repliesBtn.setAttribute('data-comment-id', comment.id);
+
         repliesBtn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
@@ -152,7 +214,7 @@ function displayComment(comment, isRoot=true)
         Ответы
     `;
         repliesBtn.addEventListener('click', () => {
-            openReplies(comment);
+             openReplies(comment.id);
         });
         header.appendChild(repliesBtn);
     }
@@ -191,8 +253,9 @@ function handlePaginationState(comments)
         if (state.skipComments >= config.pageSize) {
             state.skipComments -= config.pageSize;
             --state.pageNumber;
+            sessionStorage.setItem('pageNumber', state.pageNumber);
         }
-
+        console.debug("state.pageNumber:", state.pageNumber);
         nextBtn.disabled = true;
         pageNumberElem.innerText = state.pageNumber;
         return false;
@@ -200,6 +263,7 @@ function handlePaginationState(comments)
 
     nextBtn.disabled = false;
     pageNumberElem.innerText = state.pageNumber;
+    console.debug("state.pageNumber:", state.pageNumber);
 
     return true;
 }
@@ -268,6 +332,7 @@ function displayTextFile(textFileUrl, textFileName)
 function resetPagination() {
     state.skipComments = 0;
     state.pageNumber = 1;
+    sessionStorage.setItem('pageNumber', state.pageNumber);
 }
 function resetRepliesPagination() {
     state.skipReplies = 0;
@@ -340,7 +405,7 @@ async function initReplies()
     initLightbox();
 }
 
-//подгрузка ответов при прокрутке вниз
+//loading replies when scrolling down
 function handleRepliesScroll()
 {
     const rect = dom.repliesPage.getBoundingClientRect();
@@ -353,10 +418,12 @@ function handleRepliesScroll()
     }
 }
 
-async function openReplies(comment)
-{
+async function openReplies(parentId) {
     showRepliesHeader();
     updateTitleModal(true);
+
+    state.currentParentId = parentId;
+    sessionStorage.setItem('currentParentId', parentId);
 
     const openAddReplyModal = document.getElementById('openAddReplyModal');
     openAddReplyModal.addEventListener('click', () => {
@@ -367,19 +434,25 @@ async function openReplies(comment)
     dom.containerComments.classList.add('hidden');
     document.getElementById('pagination-page').classList.add('hidden');
 
-    // Добавляем обработчик прокрутки при открытии ответов
+    //Adding a scroll handler when opening replies
     window.addEventListener("scroll", handleRepliesScroll);
 
-    state.currentParentId = comment.id
     dom.repliesContainer.innerHTML = '';
 
-    console.debug("Opening replies modal for comment ID:",state.currentParentId);
+    console.debug("Opening replies modal for comment ID:", state.currentParentId);
 
-    const rootComment = displayComment(comment, false);//чтобы отображался без кнопки ответов
+    const commentEl = document.querySelector(`.comment-card[data-comment-id="${parentId}"]`);
+    console.debug("Found comment element for replies:", commentEl);
+    const comment = commentEl.dataComment;
+    console.debug("Parent comment data in openReplies:", comment);
+    if (comment)
+    {
+        const parentComment = displayComment(comment, false);//comment is displayed without a reply button
 
-    const originalComment = document.getElementById("originalComment");
-    originalComment.innerHTML = "";
-    originalComment.appendChild(rootComment);
+        const parentCommentEl = document.getElementById("originalComment");
+        parentCommentEl.innerHTML = "";
+        parentCommentEl.appendChild(parentComment);
+    }
 
     await initReplies();
 
@@ -396,6 +469,7 @@ function closeReplies()
     document.getElementById('pagination-page').classList.remove('hidden');
 
     state.currentParentId = null;
+    sessionStorage.removeItem('currentParentId');
     
     window.removeEventListener("scroll", handleRepliesScroll);
 
@@ -663,14 +737,12 @@ function validateCommentText(text) {
 function validateUsername(username)
 {
     if (!username || username.includes(' ') || username.length < 3 || username.length > 20) {
-        alert("не корректное имя пользователя");
+        alert("Incorrect username");
         return false;
     }
 
     return true;
 }
-
-
 
 // handler for image/text file upload
 function initFileUpload()
@@ -686,22 +758,22 @@ function initFileUpload()
         const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
         const allowedTextTypes = ['text/plain', '.txt'];
 
-        // Проверка типа файла
+        // Checking file type
         if (!allowedImageTypes.includes(file.type) && !allowedTextTypes.includes(file.type))
         {
             input.value = '';
             return;
         }
-        // Проверка размера image файла (5MB)
+        // Checking image file size, up to (5MB)
         if (allowedImageTypes.includes(file.type) && file.size > 5 * 1024 * 1024) {
-            alert('Размер файла не должен превышать 5MB');
+            alert('The image size must not exceed 5MB');
             input.value = '';
             return;
         }
-        // Проверка размера txt файла (100KB)
+        // Checking txt file size up to (100KB)
         if (allowedTextTypes.includes(file.type) && file.size > 100 * 1024)
         {
-            alert('Размер файла не должен превышать 100KB');
+            alert('The file size must not exceed 100KB');
             input.value = '';
             return;
         }
@@ -713,7 +785,7 @@ function initFileUpload()
 }
 
 
-/* --- Вспомогательная функция: оборачивает выделение в textarea --- */
+/* --- Helper function: wraps the selection in a textarea--- */
 function wrapSelection(textarea, openTag, closeTag) {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -738,7 +810,7 @@ function wrapSelection(textarea, openTag, closeTag) {
     textarea.focus();
 }
 
-/* --- Локальный превью (на клиенте) --- */
+/* ---Local preview on the client--- */
 function clientSidePreview(raw)
 {
     if (!raw) return '';
@@ -756,7 +828,7 @@ function clientSidePreview(raw)
 }
 
 
-/* --- Привязываем кнопки к оборачиванию --- */
+/* --- Attaching buttons to wrap--- */
 document.querySelectorAll('.block-tags .btn[data-tag]').forEach(btn =>
 {
     btn.addEventListener('click', () => {
@@ -766,7 +838,7 @@ document.querySelectorAll('.block-tags .btn[data-tag]').forEach(btn =>
     });
 });
 
-/* --- Ссылка: запрашиваем href и title у пользователя, либо вставляем шаблон --- */
+/* --- Link: Request href and title from the user, or insert a template --- */
 document.getElementById('btn-link').addEventListener('click', async () =>
 {
     const ta = document.getElementById('commentText');
@@ -816,10 +888,11 @@ function initLightbox() {
     });
 }
 
-
 // Initialize main page
 document.addEventListener('DOMContentLoaded', async () =>
 {
     setupEventHandlers();
+    savedState();
     await initComments();
+    restoreRepliesState();
 });
