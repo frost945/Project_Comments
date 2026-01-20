@@ -7,21 +7,26 @@ using Microsoft.Extensions.FileProviders;
 using Serilog;
 using Serilog.Filters;
 
+
+var builder = WebApplication.CreateBuilder();
+
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
+    .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
 
       // Audit logs  (file only)
       .WriteTo.Logger(audit => audit
+          .MinimumLevel.Information() // Audit logs are always Information level
           .Filter.ByIncludingOnly(Matching.WithProperty("AuditUser"))
           .WriteTo.Async(a => a.File(
               "logs/audit-user-.txt",
               rollingInterval: RollingInterval.Day,
               buffered: false)) //for production, to set buffered: true
-                                //for dev, to set buffered: false, so logs appear immediately
+                                //for dev, to set buffered: false, to display logs immediately
       )
 
     // Technical logs (console and file), excluding audit
+    // Log level is taken from configuration file appsettings.json
     .WriteTo.Logger(tech => tech
         .Filter.ByExcluding(Matching.WithProperty("AuditUser"))
         .WriteTo.Async(a => a.File(
@@ -32,8 +37,6 @@ Log.Logger = new LoggerConfiguration()
     )
 
     .CreateLogger();
-
-var builder = WebApplication.CreateBuilder();
 
 builder.Host.UseSerilog();
 
