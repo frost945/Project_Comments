@@ -155,19 +155,19 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/uploads/images"
 });
 
-
-
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<CommentsDbContext>();
     Console.WriteLine("DB Connection: " + db.Database.CanConnect());
 
+    // For development purposes only: reset database
     //  db.Database.EnsureDeleted();
     // db.Database.EnsureCreated();
 
     if (app.Environment.IsDevelopment())
         db.Database.Migrate();
 }
+
 app.UseRouting();
 
 app.MapControllers();
