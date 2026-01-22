@@ -95,7 +95,7 @@ namespace Comments.Application.Services
             };
 
             _logger.LogAuditUser(
-                "Created comment {CommentId} by {UserName}, HasFile: {HasFile}, ParentId: {ParentId}",
+                "Created comment {CommentId}, UserName: {UserName}, HasFile: {HasFile}, ParentId: {ParentId}",
                 commentResponse.Id,
                 commentResponse.UserName,
                 file != null,
